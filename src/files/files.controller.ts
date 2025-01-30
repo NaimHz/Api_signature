@@ -3,20 +3,17 @@ import {
   Controller,
   Get,
   Res,
-  HttpStatus,
   Post,
   UseInterceptors,
   UploadedFile,
   Body,
-  UseGuards,
   Request,
 } from '@nestjs/common';
-import { createReadStream, existsSync, readdirSync } from 'fs';
-import { join } from 'path';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Express } from 'express';
 import { CreateFileDto } from './dto/create-file.dto';
-import { AuthGuard } from '@nestjs/passport';
+import { Public } from '../auth/decorators/public.decorator';
+
 
 @Controller('files')
 export class FilesController {
@@ -32,7 +29,7 @@ export class FilesController {
   ) {
     return this.filesService.cryptUpload(uploadBody, file, res, req);
   }
-
+  @Public()
   @Post('decrypt')
   @UseInterceptors(FileInterceptor('file'))
   decryptUpload(
@@ -40,5 +37,10 @@ export class FilesController {
     @UploadedFile() file: Express.Multer.File,
   ) {
     return this.filesService.decryptUpload(file);
+  }
+
+  @Get()
+  async getAllFiles() {
+    return this.filesService.findAll();
   }
 }

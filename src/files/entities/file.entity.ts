@@ -8,6 +8,9 @@ export class File {
     id: number;
 
     @Column()
+    name: string;
+
+    @Column()
     size: number;
 
     @Column()
@@ -19,4 +22,3 @@ export class File {
     @ManyToOne(() => User, (user) => user.id, { nullable: false })
     user?: User;
 }
-

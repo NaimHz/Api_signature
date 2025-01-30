@@ -20,7 +20,7 @@ export class FilesService {
     @InjectRepository(File) private fileRepository: Repository<File>,
     @InjectRepository(User) private usersRepository: Repository<User>,
     private usersService: UsersService  // Injection du UsersService
-  ) {}
+  ) { }
 
   async cryptUpload(body: CreateFileDto, file: Express.Multer.File, res, req) {
     if (!file || !file.path) {
@@ -30,7 +30,14 @@ export class FilesService {
     const token = authHeader?.split(' ')[1];
     let userHeader = jwt.verify(token, this.jwtSecret) as { id: UUID; email: string; iat: number; exp: number };
 
-    const user = await this.usersService.findOneById(userHeader.id);
+    // Récupérer l'utilisateur complet depuis la base de données
+    const user = await this.usersRepository.findOne({
+      where: { id: userHeader.id }
+    });
+
+    if (!user) {
+      throw new Error('Utilisateur non trouvé');
+    }
 
     const encryptedCode = jwt.sign({ code: body.code }, this.jwtSecret, {
       expiresIn: '1h',
@@ -51,22 +58,22 @@ export class FilesService {
         ['-o', outputFilePath],
       );
 
-      console.log('Métadonnées ajoutées avec succès');
-
+      // Créer et sauvegarder le fichier avec la relation utilisateur
       const newFile = this.fileRepository.create({
         size: file.size,
-        path: filePath,
-        user: user
+        path: outputFilePath, // Utiliser le chemin du fichier crypté
+        user: user // Assigner l'utilisateur complet
       });
 
-      await this.fileRepository.save(newFile);
-      console.log('Fichier enregistré en base:', newFile);
+      const savedFile = await this.fileRepository.save(newFile);
+      console.log('Fichier enregistré en base:', savedFile);
 
-      const fileStream = createReadStream(filePath);
+      const fileStream = createReadStream(outputFilePath);
       fileStream.pipe(res);
 
       return `Fichier uploadé avec succès : ${file.filename}`;
     } catch (error) {
+      console.error('Erreur détaillée:', error);
       throw new Error("Erreur lors de l'ajout des métadonnées.");
     }
   }
@@ -75,6 +82,7 @@ export class FilesService {
     file: Express.Multer.File,
   ): Promise<{ decryptedCode: string }> {
     if (!file || !file.path) {
+      console.log(file);
       console.error('Le fichier est vide ou non valide.');
       throw new Error('Le fichier est vide ou non valide.');
     }
@@ -99,16 +107,39 @@ export class FilesService {
           code: string;
         };
         console.log('Token décodé:', decodedToken);
+
+        await this.updateCheckCount(metadata.Title);
+
         return { decryptedCode: decodedToken.code };
       } catch (jwtError) {
         if (jwtError instanceof jwt.JsonWebTokenError) {
+          throw new Error('Token invalide ou expiré');
+        } else {
+          throw new Error(`Erreur JWT : ${jwtError.message}`);
         }
-        throw new Error('Token invalide ou expiré');
       }
     } catch (error) {
-      throw new Error(
-        `Erreur lors de la récupération du code : ${error.message}`,
-      );
+      throw new Error(`Erreur lors de la récupération du code : ${error.message}`);
     }
   }
+
+  async updateCheckCount(fileTitle: string): Promise<void> {
+    const file = await this.getFileByName(fileTitle);
+
+    if (file) {
+      file.checkCount = (file.checkCount || 0) + 1;
+      await this.fileRepository.save(file);
+    }
+  }
+
+  async getFileByName(name: string): Promise<File | null> {
+    const file = await this.fileRepository.findOne({
+      where: { path: name }
+    });
+    return file;
+  }
+  async findAll(): Promise<File[]> {
+    return this.fileRepository.find();
+  }
+
 }

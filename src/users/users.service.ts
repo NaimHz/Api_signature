@@ -15,6 +15,7 @@ export class UsersService {
     public usersRepository: Repository<User>,
   ) {}
 
+
   findOneByEmail(email: string): Promise<User | null> {
     return this.usersRepository.findOneBy({ email });
   }

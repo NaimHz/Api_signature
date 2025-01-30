@@ -9,27 +9,31 @@ import { AuthModule } from './auth/auth.module';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtGuard } from './auth/guards/jwt.guard';
 import { FilesModule } from './files/files.module';
+import { File } from './files/entities/file.entity';
+import { CertificatesModule } from './certificates/certificates.module';
+
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRootAsync({
-      imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        type: 'mysql',
-        host: configService.get<string>('DB_HOST'),
-        port: configService.get<number>('DB_PORT'),
-        database: configService.get<string>('DB_NAME'),
-        username: configService.get<string>('DB_USERNAME'),
-        password: configService.get<string>('DB_PASSWORD'),
-        entities: [User],
-        synchronize: true,
+        imports: [ConfigModule],
+        useFactory: async (configService: ConfigService) => ({
+          type: 'mysql',
+          host: configService.get<string>('DB_HOST'),
+          port: configService.get<number>('DB_PORT'),
+          database: configService.get<string>('DB_NAME'),
+          username: configService.get<string>('DB_USERNAME'),
+          password: configService.get<string>('DB_PASSWORD'),
+          entities: [User, File], // Ajouter l'entité File ici
+          synchronize: true,
+        }),
+        inject: [ConfigService],
       }),
-      inject: [ConfigService],
-    }),
     UsersModule,
     AuthModule,
-    FilesModule
+    FilesModule,
+    CertificatesModule
   ],
   controllers: [AppController],
   providers: [
