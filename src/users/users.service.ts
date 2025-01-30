@@ -4,6 +4,7 @@ import { Repository, UpdateResult } from 'typeorm';
 import { User } from './users.entity';
 import { UUID } from 'crypto';
 
+
 @Injectable()
 export class UsersService {
   save(newUser: User): User | PromiseLike<User> {
@@ -11,7 +12,7 @@ export class UsersService {
   }
   constructor(
     @InjectRepository(User)
-    private usersRepository: Repository<User>,
+    public usersRepository: Repository<User>,
   ) {}
 
   findOneByEmail(email: string): Promise<User | null> {
@@ -26,7 +27,7 @@ export class UsersService {
     return this.usersRepository.save(user);
   }
 
-  update(userId: UUID, userInformation: Partial<User>): Promise<UpdateResult> {
+  update(userId: number, userInformation: Partial<User>): Promise<UpdateResult> {
     return this.usersRepository.update(userId, userInformation);
   }
 }

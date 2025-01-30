@@ -19,6 +19,4 @@ export class User {
   @Column()
   lastName: string;
 
-  @OneToMany(() => File, (file) => file.id)
-    id_file: File[]
 }

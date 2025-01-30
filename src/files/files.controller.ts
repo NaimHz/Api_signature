@@ -8,26 +8,37 @@ import {
   UseInterceptors,
   UploadedFile,
   Body,
+  UseGuards,
+  Request,
 } from '@nestjs/common';
 import { createReadStream, existsSync, readdirSync } from 'fs';
 import { join } from 'path';
-import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Express } from 'express';
 import { CreateFileDto } from './dto/create-file.dto';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('files')
 export class FilesController {
   constructor(private readonly filesService: FilesService) {}
 
-  @Get('download')
-  downloadFile(@Res() res: Response) {
-    return this.filesService.downloadFile(res);
+  @Post('crypt')
+  @UseInterceptors(FileInterceptor('file'))
+  cryptUpload(
+    @Body() uploadBody: CreateFileDto,
+    @UploadedFile() file: Express.Multer.File,
+    @Res() res: Response,
+    @Request() req: Request,
+  ) {
+    return this.filesService.cryptUpload(uploadBody, file, res, req);
   }
 
-  @Post('upload')
+  @Post('decrypt')
   @UseInterceptors(FileInterceptor('file'))
-  uploadFile(@Body() uploadBody : CreateFileDto, @UploadedFile() file: Express.Multer.File) {
-    return this.filesService.handleFileUpload(uploadBody, file);
+  decryptUpload(
+    @Body() uploadBody: CreateFileDto,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.filesService.decryptUpload(file);
   }
 }

@@ -1,12 +1,11 @@
-import { Column, PrimaryGeneratedColumn } from "typeorm";
+import { Entity, Column, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { User } from "src/users/users.entity";
 
+@Entity() // Ajout du décorateur Entity
 export class File {
 
     @PrimaryGeneratedColumn()
     id: number;
-
-    @Column()
-    name: string;
 
     @Column()
     size: number;
@@ -16,4 +15,8 @@ export class File {
 
     @Column({ default: 0 })
     checkCount: number;
+
+    @ManyToOne(() => User, (user) => user.id, { nullable: false })
+    user?: User;
 }
+
